@@ -1,0 +1,48 @@
+# Copyright (c) 2016, nubia. All rights reserved.
+#
+# init.project.rc
+# For the specific project only
+import init.nubia.lcd.rc
+import init.nubia.touch.rc
+on init
+    # See storage config details at http://source.android.com/tech/storage/
+
+    mkdir /mnt/media_rw/usba 0700 media_rw media_rw
+    mkdir /storage/usba 0700 root root
+    export EXTERNAL_STORAGE /sdcard
+    export OTG_STORAGE /storage/usba
+
+    # Support legacy paths
+    symlink /sdcard /mnt/sdcard
+    symlink /sdcard /storage/sdcard0
+
+#nubia add for bootsound
+on property:sys.zte.boot.sound.completed=1
+    start audioserver
+
+chmod 0664 /system/media/audio/ui/bootup.wav
+chmod 0755 /system/bin/bootsound.sh
+#nubia add end
+
+#Add texfat.ko Module
+on boot
+    insmod /system/lib/modules/texfat.ko
+
+##finger start
+on boot
+	mkdir /dev/fpcSocket 0770 system system
+	chmod -R 0777 /dev/fpcSocket
+	chown system system /sys/bus/platform/devices/fpc1020.106/irq
+	chown system system /sys/bus/platform/devices/fpc1020.106/wakeup_enable
+	chown system system /sys/bus/platform/devices/fpc1020.107/irq
+	chown system system /sys/bus/platform/devices/fpc1020.107/wakeup_enable
+
+service fingerprintd /system/bin/fingerprintd
+       class late_start
+       user system
+
+on property:sys.hardware.fingerprint=fpc
+       setprop ro.hardware.fingerprint fpc
+# nubia add end
+
+###finger end

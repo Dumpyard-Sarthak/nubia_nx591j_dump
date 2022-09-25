@@ -1,0 +1,18 @@
+## NX591-user 7.1.1 NMF26F eng.nubia.20191014.171552 release-keys
+- Manufacturer: nubia
+- Platform: msm8952
+- Codename: NX591J
+- Brand: nubia
+- Flavor: NX591-user
+- Release Version: 7.1.1
+- Id: NMF26F
+- Incremental: eng.nubia.20191014.171552
+- Tags: release-keys
+- CPU Abilist: arm64-v8a,armeabi-v7a,armeabi
+- A/B Device: false
+- Locale: zh-CN
+- Screen Density: undefined
+- Fingerprint: nubia/NX591J/NX591J:7.1.1/NMF26F/eng.nubia.20170905.150740:user/release-keys
+- OTA version: 
+- Branch: NX591-user-7.1.1-NMF26F-eng.nubia.20191014.171552-release-keys
+- Repo: nubia_nx591j_dump

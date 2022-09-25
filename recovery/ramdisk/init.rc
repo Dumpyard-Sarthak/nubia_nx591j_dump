@@ -1,0 +1,133 @@
+import /init.recovery.${ro.hardware}.rc
+
+on early-init
+    # Set the security context of /postinstall if present.
+    restorecon /postinstall
+
+    start ueventd
+    start healthd
+
+on init
+    export ANDROID_ROOT /system
+    export ANDROID_DATA /data
+    export EXTERNAL_STORAGE /sdcard
+
+    symlink /system/etc /etc
+
+    mkdir /sdcard
+    mkdir /system
+    mkdir /data
+    mkdir /cache
+    mkdir /sideload
+    mkdir /firmware
+    mount tmpfs tmpfs /tmp
+
+#Nubia add
+    #setrlimit 3 10485760000 10485760000
+    symlink /sbin/busybox  /sbin/sh
+    symlink /sbin/busybox  /sbin/bash
+    symlink /sbin/busybox  /sbin/ln
+    export PATH /sbin:/system/bin
+    mkdir /storage
+    mkdir /storage/sdcard0
+    mkdir /usba_sdcard
+#Nubia end
+    chown root shell /tmp
+    chmod 0775 /tmp
+
+    write /proc/sys/kernel/panic_on_oops 1
+    write /proc/sys/vm/max_map_count 1000000
+
+on fs
+    mkdir /dev/usb-ffs 0770 shell shell
+    mkdir /dev/usb-ffs/adb 0770 shell shell
+    mount functionfs adb /dev/usb-ffs/adb uid=2000,gid=2000
+
+    write /sys/class/android_usb/android0/enable 0
+#Nubia modify
+    #write /sys/class/android_usb/android0/idVendor 18D1
+    #write /sys/class/android_usb/android0/idProduct D001
+    write /sys/class/android_usb/android0/idVendor 19D2
+    write /sys/class/android_usb/android0/idProduct FFCD
+    write /sys/class/android_usb/android0/f_ffs/aliases adb
+    #write /sys/class/android_usb/android0/functions adb
+#Nubia end
+    write /sys/class/android_usb/android0/functions mass_storage,adb
+    write /sys/class/android_usb/android0/iManufacturer ${ro.product.manufacturer}
+    write /sys/class/android_usb/android0/iProduct ${ro.product.model}
+    write /sys/class/android_usb/android0/iSerial ${ro.serialno}
+
+on boot
+    ifup lo
+    hostname localhost
+    domainname localdomain
+
+    class_start default
+
+#Nubia add for exfat filesystem
+    wait /dev/block/bootdevice/by-name/system
+    mount ext4 /dev/block/bootdevice/by-name/system /system ro nosuid nodev barrier=1
+    insmod /system/lib/modules/texfat.ko
+    #umount /system
+#Nubia end
+
+
+# Load properties from /system/ + /factory after fs mount.
+on load_system_props_action
+    load_system_props
+
+on firmware_mounts_complete
+   rm /dev/.booting
+
+# Mount filesystems and start core system services.
+on late-init
+    trigger early-fs
+    trigger fs
+    trigger post-fs
+    trigger post-fs-data
+
+    # Load properties from /system/ + /factory after fs mount. Place
+    # this in another action so that the load will be scheduled after the prior
+    # issued fs triggers have completed.
+    trigger load_system_props_action
+
+    # Remove a file to wake up anything waiting for firmware
+    trigger firmware_mounts_complete
+
+    trigger early-boot
+    trigger boot
+
+on property:sys.powerctl=*
+   powerctl ${sys.powerctl}
+
+#Nubia add for recovery debug
+service busybox /sbin/busybox.sh
+    oneshot
+#Nubia end
+
+service ueventd /sbin/ueventd
+    critical
+    seclabel u:r:ueventd:s0
+
+service healthd /sbin/healthd -r
+    critical
+    seclabel u:r:healthd:s0
+
+service recovery /sbin/recovery
+    seclabel u:r:recovery:s0
+
+service adbd /sbin/adbd --root_seclabel=u:r:su:s0 --device_banner=recovery
+    disabled
+    socket adbd stream 660 system system
+    seclabel u:r:adbd:s0
+
+# Always start adbd on userdebug and eng builds
+on property:ro.debuggable=1
+    write /sys/class/android_usb/android0/enable 1
+    start adbd
+
+# Restart adbd so it can run as root
+on property:service.adb.root=1
+    write /sys/class/android_usb/android0/enable 0
+    restart adbd
+    write /sys/class/android_usb/android0/enable 1

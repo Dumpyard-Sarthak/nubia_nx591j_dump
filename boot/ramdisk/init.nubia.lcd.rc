@@ -1,0 +1,5 @@
+on post-fs-data
+    chown system system /sys/kernel/lcd_enhance/lcd_power_on
+    chown system system /sys/kernel/lcd_enhance/lcd_power_off
+    chown system system /sys/kernel/lcd_enhance/colortmp
+    chown system system /sys/kernel/lcd_enhance/cabc
